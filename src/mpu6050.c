@@ -6,9 +6,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define BIT_SET(value, bit)    ((value) |= (1UL << (bit)))
+#define BIT_CLEAR(value, bit)  ((value) &= ~(1UL << (bit)))
+#define BIT_TOGGLE(value, bit) ((value) ^= (1UL << (bit)))
+#define BIT_GET(value, bit)    (((value) >> (bit)) & 1)
+
 // translation unit functions
-static int mpu6050_whoami_(mpu6050* device);
-static int mpu6050_reset_(mpu6050* device);
+static int mpu6050_whoami_(const mpu6050* device);
+static int mpu6050_reset_(const mpu6050* device);
 
 // API functions
 int mpu6050_close(mpu6050* device) {
@@ -52,12 +57,7 @@ int mpu6050_init(mpu6050* device) {
     return 0;
 }
 
-static int mpu6050_reset_(mpu6050* device) {
-    // set power management register
-    //if (write(device->i2c_fd, ))
-    (void)device;
-    return 0;
-}
+
 
 //int mpu6050_read_data(mpu6050_data_t* data) {
 //    if (i2c_fd < 0) {
@@ -92,7 +92,7 @@ static int mpu6050_reset_(mpu6050* device) {
 
 
 // Static functions
-static int mpu6050_whoami_(mpu6050* device) {
+static int mpu6050_whoami_(const mpu6050* device) {
     // Verify device by reading WHO_AM_I register
     unsigned char who_am_i;
     unsigned char reg_addr = MPU6050_WHO_AM_I;
@@ -106,5 +106,37 @@ static int mpu6050_whoami_(mpu6050* device) {
         return -1;
     }
     
+    return 0;
+}
+
+static int mpu6050_reset_(const mpu6050* device) {
+    // set power management register
+    uint8_t ret_val;
+
+    // read current value of the MPU6050_PWR_MGMT_1
+    uint8_t curr_val;
+    uint8_t reg_addr = MPU6050_PWR_MGMT_1;
+    if (write(device->i2c_fd, &reg_addr, 1) != 1) return -1;
+    if (read(device->i2c_fd, &curr_val, 1) != 1) return -1;
+
+    BIT_SET(curr_val, 7);
+    if (write(device->i2c_fd, &reg_addr, 1) != 1) return -1;
+    if (write(device->i2c_fd, &curr_val, 1) != 1) return -1;
+
+    uint8_t reset_status;
+    do {
+        if (write(device->i2c_fd, &reg_addr, 1) != 1) return -1;
+        if (read(device->i2c_fd, &reset_status, 1) != 1) return -1;
+    } while (reset_status != 0);  // Wait until bit 7 is 0
+    usleep(10000);
+
+    // signal path reset
+    reg_addr = MPU6050_SIGNAL_PATH_RESET;
+    curr_val = 0x7;
+    if (write(device->i2c_fd, &reg_addr, 1) != 1) return -1;
+    if (write(device->i2c_fd, &curr_val, 1) != 1) return -1;
+    if (read(device->i2c_fd, &curr_val, 1) != 1 && curr_val != 0x7)
+        return -1;
+
     return 0;
 }
