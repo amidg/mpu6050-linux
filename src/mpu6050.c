@@ -24,27 +24,28 @@ int mpu6050_init(mpu6050* device) {
     // Open I2C device
     device->i2c_fd = open(device->i2c_device_path, O_RDWR);
     if (device->i2c_fd < 0) {
-        perror("Failed to open I2C device");
+        printf("Failed to open I2C device\n");
         mpu6050_close(device);
         return -1;
     }
     
     // Set I2C address
     if (ioctl(device->i2c_fd, I2C_SLAVE, MPU6050_I2CADDR_DEFAULT) < 0) {
-        perror("Failed to set I2C address");
+        printf("Failed to set I2C address\n");
         mpu6050_close(device);
         return -1;
     }
 
     // who am i
-    if (mpu6050_whoami_(device) != 1) {
+    if (mpu6050_whoami_(device) != 0) {
+        printf("Failed to set WHO_AM_I\n");
         mpu6050_close(device);
         return -1;
     }
 
     // reset
-    if (mpu6050_reset_(device) != 1) {
-        perror("Failed to reset MPU6050 device");
+    if (mpu6050_reset_(device) != 0) {
+        printf("Failed to reset MPU6050 device\n");
         mpu6050_close(device);
         return -1;
     }
@@ -55,7 +56,7 @@ static int mpu6050_reset_(mpu6050* device) {
     // set power management register
     //if (write(device->i2c_fd, ))
     (void)device;
-    return 1;
+    return 0;
 }
 
 //int mpu6050_read_data(mpu6050_data_t* data) {
@@ -96,12 +97,12 @@ static int mpu6050_whoami_(mpu6050* device) {
     unsigned char who_am_i;
     unsigned char reg_addr = MPU6050_WHO_AM_I;
     if (write(device->i2c_fd, &reg_addr, 1) != 1) {
-        perror("Failed to set WHO_AM_I address on the i2c bus");
+        printf("Failed to set WHO_AM_I address on the i2c bus\n");
         return -1;
     }
 
     if (read(device->i2c_fd, &who_am_i, 1) != 1) {
-        perror("Failed to read WHO_AM_I register");
+        printf("Failed to read WHO_AM_I register\n");
         return -1;
     }
     
