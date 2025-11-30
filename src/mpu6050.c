@@ -14,6 +14,8 @@
 // translation unit functions
 static int mpu6050_whoami_(const mpu6050* device);
 static int mpu6050_reset_(const mpu6050* device);
+static int mpu6050_disable_sleep_(const mpu6050* device);
+static int mpu6050_set_clock_source_(const mpu6050* device, const mpu6050_clock_select_t* mode);
 
 // API functions
 int mpu6050_close(mpu6050* device) {
@@ -49,7 +51,23 @@ int mpu6050_init(mpu6050* device) {
     }
 
     // reset
+    // page 8 of datasheet -> register 107 will be set to 0x40 = 64
     if (mpu6050_reset_(device) != 0) {
+        printf("Failed to reset MPU6050 device\n");
+        mpu6050_close(device);
+        return -1;
+    }
+
+    // set internal clock
+    const mpu6050_clock_select_t clk_src = MPU6050_PLL_GYROX;
+    if (mpu6050_set_clock_source_(device, &clk_src) != 0) {
+	printf("Failed to set clock src at MPU6050 device\n");
+        mpu6050_close(device);
+        return -1;
+    }
+
+    // disable sleep
+    if (mpu6050_disable_sleep_(device) != 0) {
         printf("Failed to reset MPU6050 device\n");
         mpu6050_close(device);
         return -1;
@@ -105,38 +123,103 @@ static int mpu6050_whoami_(const mpu6050* device) {
         printf("Failed to read WHO_AM_I register\n");
         return -1;
     }
-    
+
+    if (who_am_i != 0x68) return -1;
+
     return 0;
 }
 
+static int mpu6050_set_clock_source_(
+	const mpu6050* device, const mpu6050_clock_select_t* mode) {
+        uint8_t curr_val = 0;
+        uint8_t reg_addr = MPU6050_PWR_MGMT_1;
+	uint8_t buffer[2];
+
+	// read current default value
+        if (write(device->i2c_fd, &reg_addr, 1) != 1) return -1;
+        if (read(device->i2c_fd, &curr_val, 1) != 1) return -1;
+
+	// set last three bits based on the mode
+	// set default clock if NULL provided
+	curr_val = curr_val | ((!mode) ? MPU6050_INTR_8MHz : *mode);
+
+	// set value of the register
+	buffer[0] = reg_addr;
+	buffer[1] = curr_val;
+        if (write(device->i2c_fd, &buffer, 2) != 2) return -1;
+	usleep(100000); // wait 100ms
+        if (write(device->i2c_fd, &reg_addr, 1) != 1) return -1;
+        if (read(device->i2c_fd, &curr_val, 1) != 1) return -1;
+	return 0;
+}
+
+static int mpu6050_disable_sleep_(const mpu6050* device) {
+	uint8_t curr_val = 0;
+        uint8_t reg_addr = MPU6050_PWR_MGMT_1;
+        uint8_t buffer[2];
+
+        // read current default value
+        if (write(device->i2c_fd, &reg_addr, 1) != 1) return -1;
+        if (read(device->i2c_fd, &curr_val, 1) != 1) return -1;
+
+        // set last three bits based on the mode
+        // set default clock if NULL provided
+	BIT_CLEAR(curr_val, 6);
+
+        // set value of the register
+        buffer[0] = reg_addr;
+        buffer[1] = curr_val;
+        if (write(device->i2c_fd, &buffer, 2) != 2) return -1;
+        usleep(100000); // wait 100ms
+        if (write(device->i2c_fd, &reg_addr, 1) != 1) return -1;
+        if (read(device->i2c_fd, &curr_val, 1) != 1) return -1;
+        return 0;
+}
+
+
 static int mpu6050_reset_(const mpu6050* device) {
-    // set power management register
-    uint8_t ret_val;
+    uint8_t buffer[2];
+    uint8_t curr_val;
+    uint8_t reg_addr = 0;
+    uint8_t retries = 5;
 
     // read current value of the MPU6050_PWR_MGMT_1
-    uint8_t curr_val;
-    uint8_t reg_addr = MPU6050_PWR_MGMT_1;
+    reg_addr = MPU6050_PWR_MGMT_1;
     if (write(device->i2c_fd, &reg_addr, 1) != 1) return -1;
     if (read(device->i2c_fd, &curr_val, 1) != 1) return -1;
 
-    BIT_SET(curr_val, 7);
-    if (write(device->i2c_fd, &reg_addr, 1) != 1) return -1;
-    if (write(device->i2c_fd, &curr_val, 1) != 1) return -1;
+    uint8_t reset_cmd = curr_val;
+    BIT_SET(reset_cmd, 7);
+    BIT_CLEAR(reset_cmd, 6);
+    buffer[0] = reg_addr;
+    buffer[1] = reset_cmd;
 
-    uint8_t reset_status;
-    do {
-        if (write(device->i2c_fd, &reg_addr, 1) != 1) return -1;
-        if (read(device->i2c_fd, &reset_status, 1) != 1) return -1;
-    } while (reset_status != 0);  // Wait until bit 7 is 0
-    usleep(10000);
+    while (curr_val != MPU6050_RESET_OK && retries-- > 0) {
+    	if (write(device->i2c_fd, &buffer, 2) != 2) return -1;
+    	usleep(100000); // 100ms as required by the datasheet
+
+	// check value
+      	if (write(device->i2c_fd, &reg_addr, 1) != 1) return -1;
+      	if (read(device->i2c_fd, &curr_val, 1) != 1) return -1;
+      	usleep(1000);
+
+	if (retries == 0) {
+    	   printf("reset failed: %d\n", curr_val);
+	   return -1;
+	}
+    }
 
     // signal path reset
     reg_addr = MPU6050_SIGNAL_PATH_RESET;
-    curr_val = 0x7;
+    buffer[0] = reg_addr;
+    buffer[1] = 0x7;
+    if (write(device->i2c_fd, &buffer, 2) != 2) return -1;
+    usleep(100000); // 100ms as required by the datasheet
     if (write(device->i2c_fd, &reg_addr, 1) != 1) return -1;
-    if (write(device->i2c_fd, &curr_val, 1) != 1) return -1;
-    if (read(device->i2c_fd, &curr_val, 1) != 1 && curr_val != 0x7)
-        return -1;
+    if (read(device->i2c_fd, &curr_val, 1) != 1) {
+      printf("reset failed: %d\n", curr_val);
+      return -1;
+    }
 
     return 0;
 }

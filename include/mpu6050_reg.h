@@ -28,4 +28,8 @@
 #define MPU6050_MOT_THR			0x1F ///< Motion detection threshold bits [7:0]
 #define MPU6050_MOT_DUR 		0x20 ///< Duration counter threshold for motion int.
 					     ///  1 kHz rate, LSB = 1 ms
+
+// constants
+#define MPU6050_RESET_OK     		0x40 // value
+
 #endif

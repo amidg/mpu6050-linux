@@ -17,6 +17,30 @@ typedef struct {
     mpu6050_data_t* data;
 } mpu6050;
 
+typedef enum clock_select {
+  MPU6050_INTR_8MHz,
+  MPU6050_PLL_GYROX,
+  MPU6050_PLL_GYROY,
+  MPU6050_PLL_GYROZ,
+  MPU6050_PLL_EXT_32K,
+  MPU6050_PLL_EXT_19MHz,
+  MPU6050_STOP = 7,
+} mpu6050_clock_select_t;
+
+typedef enum {
+  MPU6050_RANGE_2G = 0b00,  ///< +/- 2g (default value)
+  MPU6050_RANGE_4G = 0b01,  ///< +/- 4g
+  MPU6050_RANGE_8G = 0b10,  ///< +/- 8g
+  MPU6050_RANGE_16G = 0b11, ///< +/- 16g
+} mpu6050_accel_range_t;
+
+typedef enum {
+  MPU6050_RANGE_250_DEG,  ///< +/- 250 deg/s (default value)
+  MPU6050_RANGE_500_DEG,  ///< +/- 500 deg/s
+  MPU6050_RANGE_1000_DEG, ///< +/- 1000 deg/s
+  MPU6050_RANGE_2000_DEG, ///< +/- 2000 deg/s
+} mpu6050_gyro_range_t;
+
 // Init functions
 int mpu6050_init(mpu6050* device);
 //int mpu6050_reset(mpu6050* device);
