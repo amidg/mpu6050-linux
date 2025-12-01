@@ -127,6 +127,28 @@ int mpu6050_init(mpu6050* device) {
     return 0;
 }
 
+int mpu6050_read_temp(const mpu6050* device) {
+ 	// checks
+	if (!device || !device->data) return -1;
+
+	// page 30: 16-bit signed value
+	int16_t temp_reading = 0;
+
+	// read TEMP_OUT_L
+	uint8_t buffer[2] = {MPU6050_TEMP_L};
+        if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
+	temp_reading |= buffer[1];
+
+	// read TEMP_OUT_H
+	buffer[0] = MPU6050_TEMP_H;
+        if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
+	temp_reading |= (buffer[1] << 8);
+
+	// output data
+	device->data->temp = (float)temp_reading / 340.0f + 36.53f;
+	return 0;
+}
+
 //int mpu6050_read_data(mpu6050_data_t* data) {
 //    if (i2c_fd < 0) {
 //        return -1;

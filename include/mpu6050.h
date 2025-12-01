@@ -46,7 +46,7 @@ int mpu6050_init(mpu6050* device);
 int mpu6050_close(mpu6050* device);
 
 // Data functions
-//int mpu6050_read_temp(float* temp);
+int mpu6050_read_temp(const mpu6050* device);
 //int mpu6050_read_accel(int16_t* accel_arr);
 //int mpu6050_read_gyro(int16_t* gyro_arr);
 //int mpu6050_read_data(mpu6050_data_t* data);
