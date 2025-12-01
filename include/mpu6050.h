@@ -28,10 +28,10 @@ typedef enum clock_select {
 } mpu6050_clock_select_t;
 
 typedef enum {
-  MPU6050_RANGE_2G = 0b00,  ///< +/- 2g (default value)
-  MPU6050_RANGE_4G = 0b01,  ///< +/- 4g
-  MPU6050_RANGE_8G = 0b10,  ///< +/- 8g
-  MPU6050_RANGE_16G = 0b11, ///< +/- 16g
+  MPU6050_RANGE_2G,  ///< +/- 2g (default value)
+  MPU6050_RANGE_4G,  ///< +/- 4g
+  MPU6050_RANGE_8G,  ///< +/- 8g
+  MPU6050_RANGE_16G, ///< +/- 16g
 } mpu6050_accel_range_t;
 
 typedef enum {
