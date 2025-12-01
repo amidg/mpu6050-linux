@@ -41,15 +41,14 @@ typedef enum {
   MPU6050_RANGE_2000_DEG, ///< +/- 2000 deg/s
 } mpu6050_gyro_range_t;
 
-// Init functions
+// Core functions
 int mpu6050_init(mpu6050* device);
-//int mpu6050_reset(mpu6050* device);
+int mpu6050_close(mpu6050* device);
 
 // Data functions
 //int mpu6050_read_temp(float* temp);
 //int mpu6050_read_accel(int16_t* accel_arr);
 //int mpu6050_read_gyro(int16_t* gyro_arr);
 //int mpu6050_read_data(mpu6050_data_t* data);
-int mpu6050_close(mpu6050* device);
 
 #endif

@@ -41,7 +41,8 @@ static int write_i2c_(
 static int mpu6050_whoami_(const mpu6050* device);
 static int mpu6050_reset_(const mpu6050* device);
 static int mpu6050_disable_sleep_(const mpu6050* device);
-static int mpu6050_set_clock_source_(const mpu6050* device, const mpu6050_clock_select_t* mode);
+static int mpu6050_set_clock_source_(const mpu6050* device, const mpu6050_clock_select_t mode);
+static int mpu6050_set_gyro_range_(const mpu6050* device, const mpu6050_gyro_range_t range);
 
 // API functions
 int mpu6050_close(mpu6050* device) {
@@ -93,7 +94,7 @@ int mpu6050_init(mpu6050* device) {
 
     // set internal clock
     const mpu6050_clock_select_t clk_src = MPU6050_PLL_GYROX;
-    if (mpu6050_set_clock_source_(device, &clk_src) != 0) {
+    if (mpu6050_set_clock_source_(device, clk_src) != 0) {
 	printf("Failed to set clock src at MPU6050 device\n");
         mpu6050_close(device);
         return -1;
@@ -105,6 +106,15 @@ int mpu6050_init(mpu6050* device) {
         mpu6050_close(device);
         return -1;
     }
+
+    // set gyro range
+    const mpu6050_gyro_range_t range = MPU6050_RANGE_500_DEG;
+    if (mpu6050_set_gyro_range_(device, range) != 0) {
+	printf("Failed to set gyro range at MPU6050 device\n");
+        mpu6050_close(device);
+        return -1;
+    }
+
     return 0;
 }
 
@@ -157,52 +167,6 @@ static int mpu6050_whoami_(const mpu6050* device) {
     return 0;
 }
 
-static int mpu6050_set_clock_source_(
-	const mpu6050* device, const mpu6050_clock_select_t* mode) {
-	// checks
-	if (!device) return -1;
-	if (!mode) return -1;
-
-	uint8_t buffer[2] = {MPU6050_PWR_MGMT_1};
-
-	// read current default value
-	if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
-
-	// set last three bits based on the mode
-	// set default clock if NULL provided
-	buffer[1] = buffer[1] | ((!mode) ? MPU6050_INTR_8MHz : *mode);
-
-	// set value of the register
-	if (write_i2c_(device->i2c_fd, buffer, sizeof(buffer)) != 0) return -1;
-	usleep(100000); // wait 100ms
-
-	// check the written value
-	if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
-	if (buffer[1] & (*mode) != (*mode)) return -1;
-	return 0;
-}
-
-static int mpu6050_disable_sleep_(const mpu6050* device) {
-        uint8_t buffer[2] = {MPU6050_PWR_MGMT_1};
-
-	if (!device) return -1;
-
-	// check current values
-	if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
-
-        // set last three bits based on the mode
-        // set default clock if NULL provided
-	BIT_CLEAR(buffer[1], 6);
-
-        // set value of the register
-	if (write_i2c_(device->i2c_fd, buffer, sizeof(buffer)) != 0) return -1;
-        usleep(100000); // wait 100ms
-	if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
-	if ((buffer[1] & MPU6050_RESET_OK) != 0) return -1;
-	return 0;
-}
-
-
 static int mpu6050_reset_(const mpu6050* device) {
     uint8_t buffer[2] = {MPU6050_PWR_MGMT_1};
     uint8_t retries = 5;
@@ -236,4 +200,76 @@ static int mpu6050_reset_(const mpu6050* device) {
     usleep(100000); // 100ms as required by the datasheet
 
     return 0;
+}
+
+// translation units
+static int mpu6050_set_clock_source_(
+	const mpu6050* device, const mpu6050_clock_select_t mode) {
+	// checks
+	if (!device) return -1;
+
+	uint8_t buffer[2] = {MPU6050_PWR_MGMT_1};
+
+	// read current default value
+	if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
+
+	// set last three bits based on the mode
+	// set default clock if NULL provided
+	buffer[1] |= mode;
+
+	// set value of the register
+	if (write_i2c_(device->i2c_fd, buffer, sizeof(buffer)) != 0) return -1;
+	usleep(100000); // wait 100ms
+
+	// check the written value
+	if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
+	if ((buffer[1] & mode) != mode) return -1;
+	return 0;
+}
+
+static int mpu6050_disable_sleep_(const mpu6050* device) {
+        uint8_t buffer[2] = {MPU6050_PWR_MGMT_1};
+
+	if (!device) return -1;
+
+	// check current values
+	if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
+
+        // set last three bits based on the mode
+        // set default clock if NULL provided
+	BIT_CLEAR(buffer[1], 6);
+
+        // set value of the register
+	if (write_i2c_(device->i2c_fd, buffer, sizeof(buffer)) != 0) return -1;
+        usleep(100000); // wait 100ms
+	if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
+	if ((buffer[1] & MPU6050_RESET_OK) != 0) return -1;
+	return 0;
+}
+
+static int mpu6050_set_gyro_range_(
+	const mpu6050* device, const mpu6050_gyro_range_t mode) {
+	// checks
+	if (!device) return -1;
+
+	uint8_t buffer[2] = {MPU6050_GYRO_CONFIG};
+	const uint8_t fs_sel_reset_value = 0xE7;
+
+	// read current default value
+	if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
+
+	// set last three bits based on the mode
+	// set default clock if NULL provided
+	buffer[1] &= fs_sel_reset_value; // clear FS_SEL bits
+	const uint8_t mode_shifted = ((mode & 0x03) << 3);
+	buffer[1] |= mode_shifted;
+
+	// set value of the register
+	if (write_i2c_(device->i2c_fd, buffer, sizeof(buffer)) != 0) return -1;
+	usleep(100000); // wait 100ms
+
+	// check the written value
+	if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
+	if ((buffer[1] & mode_shifted) != mode_shifted) return -1;
+	return 0;
 }
