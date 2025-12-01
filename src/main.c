@@ -16,9 +16,15 @@ int main(void) {
     
     // Read data continuously
     while (1) {
-	if (mpu6050_read_temp(&imu) == 0) {
+	// read temperature
+	if (mpu6050_get_sensors(&imu) == 0) {
 		printf("Temperature (C): %f\n", data.temp);
+		printf("Accel X / Y / Z (): %d / %d / %d\n", data.ax, data.ay, data.az);
+		printf("Gyro X / Y / Z (): %d / %d / %d\n", data.gx, data.gy, data.gz);
 	}
+
+	// read gyro
+
         //if (mpu6050_read_data(&data) == 0) {
         //    printf("Accel: (%d, %d, %d) | Gyro: (%d, %d, %d)\n",
         //           data.ax, data.ay, data.az,
@@ -27,7 +33,7 @@ int main(void) {
         //    printf("Failed to read data\n");
         //}
         
-        usleep(10000); // 100ms delay
+        usleep(100000); // 100ms delay
     }
     
     mpu6050_close(&imu);

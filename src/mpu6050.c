@@ -127,59 +127,36 @@ int mpu6050_init(mpu6050* device) {
     return 0;
 }
 
-int mpu6050_read_temp(const mpu6050* device) {
+// read 14-bit buffer from the 
+int mpu6050_get_sensors(const mpu6050* device) {
  	// checks
 	if (!device || !device->data) return -1;
 
-	// page 30: 16-bit signed value
-	int16_t temp_reading = 0;
+	// buffer consists of:
+	// - 6x uint8_t ACCEL values (HIGH and LOW)
+	// - 2x uint8_t TEMP values (HIGH and LOW)
+	// - 6x uint8_t GYRO values (HIGH and LOW)
+	// MPU6050_ACCEL_OUT (0x3B) is starting register
+	const uint8_t addr = MPU6050_ACCEL_OUT;
+	uint8_t buffer[14];
 
-	// read TEMP_OUT_L
-	uint8_t buffer[2] = {MPU6050_TEMP_L};
-        if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
-	temp_reading |= buffer[1];
+        if (read_i2c_(device->i2c_fd, &addr, 14, buffer) != 0) return -1;
 
-	// read TEMP_OUT_H
-	buffer[0] = MPU6050_TEMP_H;
-        if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
-	temp_reading |= (buffer[1] << 8);
+	// read accel
+	device->data->ax = (int16_t)((buffer[0] << 8) | buffer[1]);
+	device->data->ay = (int16_t)((buffer[2] << 8) | buffer[3]);
+	device->data->az = (int16_t)((buffer[4] << 8) | buffer[5]);
+	
+	// read temp
+	device->data->temp = (int16_t)((buffer[6] << 8) | buffer[7]) / 340.0f + 36.53f;
 
-	// output data
-	device->data->temp = (float)temp_reading / 340.0f + 36.53f;
+	// read gyro
+	device->data->gx = (int16_t)((buffer[8] << 8) | buffer[9]);
+	device->data->gy = (int16_t)((buffer[10] << 8) | buffer[11]);
+	device->data->gz = (int16_t)((buffer[12] << 8) | buffer[13]);
+
 	return 0;
 }
-
-//int mpu6050_read_data(mpu6050_data_t* data) {
-//    if (i2c_fd < 0) {
-//        return -1;
-//    }
-//    
-//    // Read accelerometer data (6 bytes)
-//    unsigned char accel_data[6];
-//    if (read(i2c_fd, accel_data, 6) != 6) {
-//        perror("Failed to read accelerometer data");
-//        return -1;
-//    }
-//    
-//    // Read gyroscope data (6 bytes)
-//    unsigned char gyro_data[6];
-//    if (read(i2c_fd, gyro_data, 6) != 6) {
-//        perror("Failed to read gyroscope data");
-//        return -1;
-//    }
-//    
-//    // Convert bytes to signed 16-bit integers
-//    data->ax = (accel_data[0] << 8) | accel_data[1];
-//    data->ay = (accel_data[2] << 8) | accel_data[3];
-//    data->az = (accel_data[4] << 8) | accel_data[5];
-//    
-//    data->gx = (gyro_data[0] << 8) | gyro_data[1];
-//    data->gy = (gyro_data[2] << 8) | gyro_data[3];
-//    data->gz = (gyro_data[4] << 8) | gyro_data[5];
-//    
-//    return 0;
-//}
-
 
 // Static functions
 static int mpu6050_whoami_(const mpu6050* device) {

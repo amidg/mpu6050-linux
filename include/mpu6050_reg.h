@@ -24,7 +24,9 @@
 #define MPU6050_PWR_MGMT_2		0x6C ///< Secondary power/sleep control register
 #define MPU6050_TEMP_H			0x41 ///< Temperature data high byte register
 #define MPU6050_TEMP_L			0x42 ///< Temperature data low byte register
-#define MPU6050_ACCEL_OUT		0x3B ///< base address for sensor data reads
+#define MPU6050_ACCEL_OUT		0x3B ///< base address for all sensor/accel data reads
+#define MPU6050_TEMP_OUT		0x41 ///< base address for temperature data reads
+#define MPU6050_GYRO_OUT		0x43 ///< base address for gyro data reads
 #define MPU6050_MOT_THR			0x1F ///< Motion detection threshold bits [7:0]
 #define MPU6050_MOT_DUR 		0x20 ///< Duration counter threshold for motion int.
 					     ///  1 kHz rate, LSB = 1 ms
