@@ -4,7 +4,8 @@
 
 int main(void) {
     mpu6050_data_t data;
-    mpu6050 imu = {-1, "/dev/i2c-1", &data};
+    mpu6050_config_t config = {MPU6050_PLL_GYROX, MPU6050_RANGE_8G, MPU6050_RANGE_500_DEG};
+    mpu6050 imu = {-1, "/dev/i2c-1", &data, &config};
 
     // Initialize MPU6050
     if (mpu6050_init(&imu) < 0) {
@@ -22,16 +23,6 @@ int main(void) {
 		printf("Accel X / Y / Z (): %d / %d / %d\n", data.ax, data.ay, data.az);
 		printf("Gyro X / Y / Z (): %d / %d / %d\n", data.gx, data.gy, data.gz);
 	}
-
-	// read gyro
-
-        //if (mpu6050_read_data(&data) == 0) {
-        //    printf("Accel: (%d, %d, %d) | Gyro: (%d, %d, %d)\n",
-        //           data.ax, data.ay, data.az,
-        //           data.gx, data.gy, data.gz);
-        //} else {
-        //    printf("Failed to read data\n");
-        //}
         
         usleep(100000); // 100ms delay
     }

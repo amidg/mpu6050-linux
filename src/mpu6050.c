@@ -41,9 +41,9 @@ static int write_i2c_(
 static int mpu6050_whoami_(const mpu6050* device);
 static int mpu6050_reset_(const mpu6050* device);
 static int mpu6050_disable_sleep_(const mpu6050* device);
-static int mpu6050_set_clock_source_(const mpu6050* device, const mpu6050_clock_select_t mode);
-static int mpu6050_set_gyro_range_(const mpu6050* device, const mpu6050_gyro_range_t range);
-static int mpu6050_set_accel_range_(const mpu6050* device, const mpu6050_accel_range_t range);
+static int mpu6050_set_clock_source_(const mpu6050* device);
+static int mpu6050_set_gyro_range_(const mpu6050* device);
+static int mpu6050_set_accel_range_(const mpu6050* device);
 
 // API functions
 int mpu6050_close(mpu6050* device) {
@@ -94,8 +94,7 @@ int mpu6050_init(mpu6050* device) {
     }
 
     // set internal clock
-    const mpu6050_clock_select_t clk_src = MPU6050_PLL_GYROX;
-    if (mpu6050_set_clock_source_(device, clk_src) != 0) {
+    if (mpu6050_set_clock_source_(device) != 0) {
 	printf("Failed to set clock src at MPU6050 device\n");
         mpu6050_close(device);
         return -1;
@@ -109,16 +108,14 @@ int mpu6050_init(mpu6050* device) {
     }
 
     // set gyro range
-    const mpu6050_gyro_range_t gyro_range = MPU6050_RANGE_500_DEG;
-    if (mpu6050_set_gyro_range_(device, gyro_range) != 0) {
+    if (mpu6050_set_gyro_range_(device) != 0) {
 	printf("Failed to set gyro range at MPU6050 device\n");
         mpu6050_close(device);
         return -1;
     }
 
     // set gyro range
-    const mpu6050_accel_range_t accel_range = MPU6050_RANGE_8G;
-    if (mpu6050_set_accel_range_(device, accel_range) != 0) {
+    if (mpu6050_set_accel_range_(device) != 0) {
 	printf("Failed to set accel range at MPU6050 device\n");
         mpu6050_close(device);
         return -1;
@@ -209,8 +206,7 @@ static int mpu6050_reset_(const mpu6050* device) {
 }
 
 // translation units
-static int mpu6050_set_clock_source_(
-	const mpu6050* device, const mpu6050_clock_select_t mode) {
+static int mpu6050_set_clock_source_(const mpu6050* device) {
 	// checks
 	if (!device) return -1;
 
@@ -221,6 +217,8 @@ static int mpu6050_set_clock_source_(
 
 	// set last three bits based on the mode
 	// set default clock if NULL provided
+	const mpu6050_clock_select_t mode =
+	    (!(device->cfg)) ? MPU6050_INTR_8MHz : device->cfg->clk_sel;
 	buffer[1] |= mode;
 
 	// set value of the register
@@ -253,8 +251,7 @@ static int mpu6050_disable_sleep_(const mpu6050* device) {
 	return 0;
 }
 
-static int mpu6050_set_gyro_range_(
-	const mpu6050* device, const mpu6050_gyro_range_t mode) {
+static int mpu6050_set_gyro_range_(const mpu6050* device) {
 	// checks
 	if (!device) return -1;
 
@@ -264,7 +261,9 @@ static int mpu6050_set_gyro_range_(
 	if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
 
 	// set last three bits based on the mode
-	// set default clock if NULL provided
+	// set default if NULL provided
+	mpu6050_gyro_range_t mode =
+	    (!(device->cfg)) ? MPU6050_RANGE_250_DEG : device->cfg->gyro_range;
 	buffer[1] &= FS_SEL_RESET_VALUE; // clear FS_SEL bits
 	const uint8_t mode_shifted = ((mode & 0x03) << 3);
 	buffer[1] |= mode_shifted;
@@ -279,8 +278,7 @@ static int mpu6050_set_gyro_range_(
 	return 0;
 }
 
-static int mpu6050_set_accel_range_(
-	const mpu6050* device, const mpu6050_accel_range_t mode) {
+static int mpu6050_set_accel_range_(const mpu6050* device) {
 	// checks
 	if (!device) return -1;
 
@@ -290,7 +288,9 @@ static int mpu6050_set_accel_range_(
 	if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
 
 	// set last three bits based on the mode
-	// set default clock if NULL provided
+	// set default if NULL provided
+	const mpu6050_accel_range_t mode =
+	    (!(device->cfg)) ? MPU6050_RANGE_2G : device->cfg->accel_range;
 	buffer[1] &= FS_SEL_RESET_VALUE; // clear FS_SEL bits
 	const uint8_t mode_shifted = ((mode & 0x03) << 3);
 	buffer[1] |= mode_shifted;
