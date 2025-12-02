@@ -22,5 +22,5 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 )
 
 # add main.c executable
-add_executable(mpu6050_test src/main.c)
+add_executable(mpu6050_test test/test.c)
 target_link_libraries(mpu6050_test PRIVATE ${PROJECT_NAME})
