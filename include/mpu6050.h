@@ -35,8 +35,8 @@ typedef enum {
 
 // Structure to hold sensor data
 typedef struct {
-    int16_t ax, ay, az; // Accelerometer data
-    int16_t gx, gy, gz; // Gyroscope data
+    float ax, ay, az; // Accelerometer data
+    float gx, gy, gz; // Gyroscope data
     float temp;	      // Temperature data
 } mpu6050_data_t;
 

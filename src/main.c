@@ -20,8 +20,8 @@ int main(void) {
 	// read temperature
 	if (mpu6050_get_sensors(&imu) == 0) {
 		printf("Temperature (C): %f\n", data.temp);
-		printf("Accel X / Y / Z (): %d / %d / %d\n", data.ax, data.ay, data.az);
-		printf("Gyro X / Y / Z (): %d / %d / %d\n", data.gx, data.gy, data.gz);
+		printf("Accel X / Y / Z (G): %f / %f / %f\n", data.ax, data.ay, data.az);
+		printf("Gyro X / Y / Z (rad/s): %f / %f / %f\n", data.gx, data.gy, data.gz);
 	}
         
         usleep(100000); // 100ms delay

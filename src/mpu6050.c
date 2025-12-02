@@ -5,6 +5,7 @@
 #include <linux/i2c-dev.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #define BIT_SET(value, bit)    ((value) |= (1UL << (bit)))
 #define BIT_CLEAR(value, bit)  ((value) &= ~(1UL << (bit)))
@@ -128,6 +129,41 @@ int mpu6050_init(mpu6050* device) {
 int mpu6050_get_sensors(const mpu6050* device) {
  	// checks
 	if (!device || !device->data) return -1;
+	static float accel_scale = 1;
+	if (device->cfg != NULL) {
+		switch (device->cfg->accel_range) {
+		case MPU6050_RANGE_2G:
+			accel_scale = 16384.0f;
+			break;
+		case MPU6050_RANGE_4G:
+			accel_scale = 8192.0f;
+			break;
+		case MPU6050_RANGE_8G:
+			accel_scale = 4096.0f;
+			break;
+		case MPU6050_RANGE_16G:
+			accel_scale = 2048.0f;
+			break;
+		}
+	}
+
+	static float gyro_scale = 1;
+	if (device->cfg != NULL) {
+		switch (device->cfg->gyro_range) {
+		case MPU6050_RANGE_250_DEG:
+			gyro_scale = 131.0f;
+			break;
+		case MPU6050_RANGE_500_DEG:
+			gyro_scale = 65.5f;
+			break;
+		case MPU6050_RANGE_1000_DEG:
+			gyro_scale = 32.8f;
+			break;
+		case MPU6050_RANGE_2000_DEG:
+			gyro_scale = 16.4f;
+			break;
+		}
+	}
 
 	// buffer consists of:
 	// - 6x uint8_t ACCEL values (HIGH and LOW)
@@ -140,17 +176,17 @@ int mpu6050_get_sensors(const mpu6050* device) {
         if (read_i2c_(device->i2c_fd, &addr, 14, buffer) != 0) return -1;
 
 	// read accel
-	device->data->ax = (int16_t)((buffer[0] << 8) | buffer[1]);
-	device->data->ay = (int16_t)((buffer[2] << 8) | buffer[3]);
-	device->data->az = (int16_t)((buffer[4] << 8) | buffer[5]);
+	device->data->ax = ((int16_t)((buffer[0] << 8) | buffer[1])) / accel_scale;
+	device->data->ay = ((int16_t)((buffer[2] << 8) | buffer[3])) / accel_scale;
+	device->data->az = ((int16_t)((buffer[4] << 8) | buffer[5])) / accel_scale;
 	
 	// read temp
 	device->data->temp = (int16_t)((buffer[6] << 8) | buffer[7]) / 340.0f + 36.53f;
 
 	// read gyro
-	device->data->gx = (int16_t)((buffer[8] << 8) | buffer[9]);
-	device->data->gy = (int16_t)((buffer[10] << 8) | buffer[11]);
-	device->data->gz = (int16_t)((buffer[12] << 8) | buffer[13]);
+	device->data->gx = (M_PI * ((int16_t)((buffer[8] << 8) | buffer[9])) / gyro_scale) / 180.0;
+	device->data->gy = (M_PI * ((int16_t)((buffer[10] << 8) | buffer[11])) / gyro_scale) / 180.0;
+	device->data->gz = (M_PI * ((int16_t)((buffer[12] << 8) | buffer[13])) / gyro_scale) / 180.0;
 
 	return 0;
 }
