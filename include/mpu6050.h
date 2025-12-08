@@ -19,6 +19,17 @@ typedef enum clock_select {
   MPU6050_STOP = 7,
 } mpu6050_clock_select_t;
 
+typedef enum fsync_out {
+  MPU6050_FSYNC_OUT_DISABLED,
+  MPU6050_FSYNC_OUT_TEMP,
+  MPU6050_FSYNC_OUT_GYROX,
+  MPU6050_FSYNC_OUT_GYROY,
+  MPU6050_FSYNC_OUT_GYROZ,
+  MPU6050_FSYNC_OUT_ACCELX,
+  MPU6050_FSYNC_OUT_ACCELY,
+  MPU6050_FSYNC_OUT_ACCELZ,
+} mpu6050_fsync_out_t;
+
 typedef enum {
   MPU6050_RANGE_2G,  ///< +/- 2g (default value)
   MPU6050_RANGE_4G,  ///< +/- 4g
@@ -42,6 +53,7 @@ typedef struct {
 
 typedef struct {
     mpu6050_clock_select_t clk_sel;
+    mpu6050_fsync_out_t fsync_sel;
     mpu6050_accel_range_t accel_range;
     mpu6050_gyro_range_t gyro_range;
 } mpu6050_config_t;
@@ -59,6 +71,7 @@ int mpu6050_close(mpu6050* device);
 
 // Data functions
 int mpu6050_get_sensors(const mpu6050* device);
+int mpu6050_get_temp(const mpu6050* device);
 
 #ifdef __cplusplus
 }

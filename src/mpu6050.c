@@ -43,6 +43,7 @@ static int mpu6050_whoami_(const mpu6050* device);
 static int mpu6050_reset_(const mpu6050* device);
 static int mpu6050_disable_sleep_(const mpu6050* device);
 static int mpu6050_set_clock_source_(const mpu6050* device);
+static int mpu6050_set_fsync_(const mpu6050* device);
 static int mpu6050_set_gyro_range_(const mpu6050* device);
 static int mpu6050_set_accel_range_(const mpu6050* device);
 
@@ -104,6 +105,13 @@ int mpu6050_init(mpu6050* device) {
     // disable sleep
     if (mpu6050_disable_sleep_(device) != 0) {
         printf("Failed to reset MPU6050 device\n");
+        mpu6050_close(device);
+        return -1;
+    }
+
+    // set fsync
+    if (mpu6050_set_fsync_(device) != 0) {
+	printf("Failed to set fsync at MPU6050 device\n");
         mpu6050_close(device);
         return -1;
     }
@@ -264,6 +272,32 @@ static int mpu6050_set_clock_source_(const mpu6050* device) {
 	// check the written value
 	if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
 	if ((buffer[1] & mode) != mode) return -1;
+	return 0;
+}
+
+static int mpu6050_set_fsync_(const mpu6050* device) {
+	// checks
+	if (!device) return -1;
+
+	uint8_t buffer[2] = {MPU6050_CONFIG};
+
+	// read current default value
+	if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
+
+	// set last three bits based on the mode
+	// set default clock if NULL provided
+	const mpu6050_fsync_out_t mode = 
+	    (!(device->cfg)) ? MPU6050_FSYNC_OUT_DISABLED : device->cfg->fsync_sel;
+	const uint8_t ext_sync_set = ((mode & 0x07) << 3);
+	buffer[1] |= ext_sync_set;
+
+	// set value of the register
+	if (write_i2c_(device->i2c_fd, buffer, sizeof(buffer)) != 0) return -1;
+	usleep(100000); // wait 100ms
+
+	// check the written value
+	if (read_i2c_(device->i2c_fd, buffer, 1, &buffer[1]) != 0) return -1;
+	if ((buffer[1] & ext_sync_set) != ext_sync_set) return -1;
 	return 0;
 }
 
