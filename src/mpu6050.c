@@ -11,6 +11,7 @@
 #define BIT_CLEAR(value, bit)  ((value) &= ~(1UL << (bit)))
 #define BIT_TOGGLE(value, bit) ((value) ^= (1UL << (bit)))
 #define BIT_GET(value, bit)    (((value) >> (bit)) & 1)
+#define CALIBRATION_ARRAY_SIZE 100
 
 // basic functions
 static int read_i2c_(
@@ -133,7 +134,38 @@ int mpu6050_init(mpu6050* device) {
     return 0;
 }
 
-// read 14-bit buffer from the 
+int mpu6050_calibrate_gyro(mpu6050* device) {
+    // check if device is valid
+    if (!device || !device->data || !device->offset) return -1;
+
+    // check if init was called before:
+    // - i2c_fd should be >= 0
+    // - i2c_device_path is not NULL
+    if (device->i2c_fd < 0 || !device->i2c_device_path) return -1;
+
+    // create array of 100 values
+    device->offset->gx = 0;
+    device->offset->gy = 0;
+    device->offset->gz = 0;
+
+    for (uint8_t i = 0; i < CALIBRATION_ARRAY_SIZE; ++i) {
+        if (mpu6050_get_sensors(device) != 0) return -1;
+        device->offset->gx += device->data->gx;
+        device->offset->gy += device->data->gy;
+        device->offset->gz += device->data->gz;
+        usleep(10);
+    }
+
+    device->offset->gx /= CALIBRATION_ARRAY_SIZE;
+    device->offset->gy /= CALIBRATION_ARRAY_SIZE;
+    device->offset->gz /= CALIBRATION_ARRAY_SIZE;
+
+    return 0;
+}
+
+// read 14-bit buffer from the IMU
+// if calibration offsets are null, publish raw values
+// if calibration offsets are present, apply them
 int mpu6050_get_sensors(const mpu6050* device) {
  	// checks
 	if (!device || !device->data) return -1;
@@ -196,8 +228,16 @@ int mpu6050_get_sensors(const mpu6050* device) {
 	device->data->gy = (M_PI * ((int16_t)((buffer[10] << 8) | buffer[11])) / gyro_scale) / 180.0;
 	device->data->gz = (M_PI * ((int16_t)((buffer[12] << 8) | buffer[13])) / gyro_scale) / 180.0;
 
+    if (device->offset != NULL) {
+        device->data->gx -= device->offset->gx;
+        device->data->gy -= device->offset->gy;
+        device->data->gz -= device->offset->gz;
+    }
+
 	return 0;
 }
+
+
 
 // Static functions
 static int mpu6050_whoami_(const mpu6050* device) {

@@ -22,5 +22,9 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 )
 
 # add main.c executable
-add_executable(mpu6050_test test/test.c)
+add_executable(mpu6050_test test/test_sensor_read.c)
 target_link_libraries(mpu6050_test PRIVATE ${PROJECT_NAME})
+
+# add calibration
+add_executable(mpu6050_calibrate test/test_calibration.c)
+target_link_libraries(mpu6050_calibrate PRIVATE ${PROJECT_NAME})

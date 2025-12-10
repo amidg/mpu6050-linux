@@ -62,12 +62,14 @@ typedef struct {
     int i2c_fd;       // i2c device in Linux
     const char* i2c_device_path;
     mpu6050_data_t* data;
+    mpu6050_data_t* offset;
     mpu6050_config_t* cfg;
 } mpu6050;
 
 // Core functions
 int mpu6050_init(mpu6050* device);
 int mpu6050_close(mpu6050* device);
+int mpu6050_calibrate_gyro(mpu6050* device);
 
 // Data functions
 int mpu6050_get_sensors(const mpu6050* device);

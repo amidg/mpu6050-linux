@@ -10,7 +10,7 @@ int main(void) {
 	MPU6050_RANGE_8G,
 	MPU6050_RANGE_500_DEG
     };
-    mpu6050 imu = {-1, "/dev/i2c-1", &data, &config};
+    mpu6050 imu = {-1, "/dev/i2c-1", &data, NULL, &config};
 
     // Initialize MPU6050
     if (mpu6050_init(&imu) < 0) {
