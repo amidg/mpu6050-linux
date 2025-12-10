@@ -26,7 +26,18 @@ int main(void) {
         printf("Failed to calibrate gyroscope MPU6050\n");
         return 1;
     }
-    printf("MPU6050 calibrated successfully\n");
+
+    // show offsets
+    printf(
+        "MPU6050 calibrated successfully:\n"
+        "gyro x: %f\n"
+        "gyro y: %f\n"
+        "gyro z: %f\n",
+        imu.offset->gx,
+        imu.offset->gy,
+        imu.offset->gz
+    );
+
     
     // Read data continuously
     while (1) {
