@@ -12,6 +12,13 @@ set(COMPILE_OPTIONS
 )
 
 option(ENABLE_CALIBRATION "Enable calibration features" OFF)
+find_package(GSL REQUIRED)
+if(NOT GSL_FOUND)
+    message(
+        FATAL_ERROR
+        "GSL not found - please install GSL development package"
+    )
+endif()
 
 # add library
 add_library(${PROJECT_NAME} src/mpu6050.c)
@@ -26,40 +33,29 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_OPTIONS})
 
 # add main.c executable
 add_executable(mpu6050_test test/test_sensor_read.c)
-target_link_libraries(mpu6050_test PRIVATE ${PROJECT_NAME})
+target_link_libraries(
+    mpu6050_test
+    PRIVATE
+    ${PROJECT_NAME}
+    ${GSL_LIBRARIES}
+)
 
 # add calibration
 if (ENABLE_CALIBRATION)
-    # find packages
-    find_package(GSL REQUIRED)
-    if(NOT GSL_FOUND)
-        message(
-            FATAL_ERROR
-            "GSL not found - please install GSL development package"
-        )
-    endif()
+    # create executable for the calibration
+    add_executable(mpu6050_calibrate test/test_calibration.c)
 
-    # create library
-    add_library(${PROJECT_NAME}_calibration src/mpu6050_calibration.c)
-    target_include_directories(${PROJECT_NAME}_calibration PUBLIC include)
-    target_link_libraries(
-        ${PROJECT_NAME}_calibration
-        PRIVATE
-        ${GSL_LIBRARIES}
-    )
     target_compile_options(
-        ${PROJECT_NAME}_calibration
+        mpu6050_calibrate
         PRIVATE
         ${COMPILE_OPTIONS}
     )
 
-    # create executable for the calibration
-    add_executable(mpu6050_calibrate test/test_calibration.c)
     target_link_libraries(
         mpu6050_calibrate
         PRIVATE
         ${PROJECT_NAME}
-        ${PROJECT_NAME}_calibration
+        ${GSL_LIBRARIES}
     )
 endif()
 

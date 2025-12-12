@@ -46,10 +46,17 @@ typedef enum {
 
 // Structure to hold sensor data
 typedef struct {
-    float ax, ay, az; // Accelerometer data
-    float gx, gy, gz; // Gyroscope data
-    float temp;	      // Temperature data
+    double ax, ay, az; // Accelerometer data
+    double gx, gy, gz; // Gyroscope data
+    double temp;	      // Temperature data
 } mpu6050_data_t;
+
+typedef struct {
+    double gx, gy, gz;
+    double ax_c0, ax_c1, ax_cov00, ax_cov01, ax_cov11,
+           ay_c0, ay_c1, ay_cov00, ay_cov01, ay_cov11,
+           az_c0, az_c1, az_cov00, az_cov01, az_cov11;
+} mpu6050_offset_t;
 
 typedef struct {
     mpu6050_clock_select_t clk_sel;
@@ -62,7 +69,7 @@ typedef struct {
     int i2c_fd;       // i2c device in Linux
     const char* i2c_device_path;
     mpu6050_data_t* data;
-    mpu6050_data_t* offset;
+    mpu6050_offset_t* offset;
     mpu6050_config_t* cfg;
 } mpu6050;
 

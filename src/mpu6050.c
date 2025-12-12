@@ -139,7 +139,7 @@ int mpu6050_init(mpu6050* device) {
 int mpu6050_get_sensors(const mpu6050* device) {
  	// checks
 	if (!device || !device->data) return -1;
-	static float accel_scale = 1;
+	static double accel_scale = 1;
 	if (device->cfg != NULL) {
 		switch (device->cfg->accel_range) {
 		case MPU6050_RANGE_2G:
@@ -157,7 +157,7 @@ int mpu6050_get_sensors(const mpu6050* device) {
 		}
 	}
 
-	static float gyro_scale = 1;
+	static double gyro_scale = 1;
 	if (device->cfg != NULL) {
 		switch (device->cfg->gyro_range) {
 		case MPU6050_RANGE_250_DEG:
