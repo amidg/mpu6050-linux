@@ -31,7 +31,9 @@
 #define MPU6050_MOT_DUR 		0x20 ///< Duration counter threshold for motion int.
 					     ///  1 kHz rate, LSB = 1 ms
 // constants
-#define MPU6050_RESET_OK     		0x40 // default value as outlined on page 41
+#define MPU6050_RESET_OK     	0x40 // default value as outlined on page 41
 #define FS_SEL_RESET_VALUE		0xE7 // bit mask to reset gyro and accel
+
+#define NUM_POINTS_GYRO_CALIBRATION 500
 
 #endif

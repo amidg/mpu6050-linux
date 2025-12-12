@@ -11,7 +11,6 @@
 #define BIT_CLEAR(value, bit)  ((value) &= ~(1UL << (bit)))
 #define BIT_TOGGLE(value, bit) ((value) ^= (1UL << (bit)))
 #define BIT_GET(value, bit)    (((value) >> (bit)) & 1)
-#define CALIBRATION_ARRAY_SIZE 100
 
 // basic functions
 static int read_i2c_(
@@ -148,7 +147,7 @@ int mpu6050_calibrate_gyro(mpu6050* device) {
     device->offset->gy = 0;
     device->offset->gz = 0;
 
-    for (uint8_t i = 0; i < CALIBRATION_ARRAY_SIZE; ++i) {
+    for (uint16_t i = 0; i < NUM_POINTS_GYRO_CALIBRATION; ++i) {
         if (mpu6050_get_sensors(device) != 0) return -1;
         device->offset->gx += device->data->gx;
         device->offset->gy += device->data->gy;
@@ -156,9 +155,9 @@ int mpu6050_calibrate_gyro(mpu6050* device) {
         usleep(10);
     }
 
-    device->offset->gx /= CALIBRATION_ARRAY_SIZE;
-    device->offset->gy /= CALIBRATION_ARRAY_SIZE;
-    device->offset->gz /= CALIBRATION_ARRAY_SIZE;
+    device->offset->gx /= NUM_POINTS_GYRO_CALIBRATION;
+    device->offset->gy /= NUM_POINTS_GYRO_CALIBRATION;
+    device->offset->gz /= NUM_POINTS_GYRO_CALIBRATION;
 
     return 0;
 }
