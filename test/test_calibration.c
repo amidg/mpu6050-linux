@@ -1,4 +1,5 @@
 #include "mpu6050.h"
+#include "mpu6050_calibration.h"
 #include <stdio.h>
 #include <unistd.h>
 
